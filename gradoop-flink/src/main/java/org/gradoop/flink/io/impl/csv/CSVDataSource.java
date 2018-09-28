@@ -27,8 +27,11 @@ import org.gradoop.flink.io.impl.csv.functions.CSVLineToVertex;
 import org.gradoop.flink.io.impl.csv.metadata.MetaData;
 import org.gradoop.flink.model.api.epgm.GraphCollection;
 import org.gradoop.flink.model.api.epgm.LogicalGraph;
+import org.gradoop.flink.model.api.epgm.LogicalGraphFactory;
 import org.gradoop.flink.model.impl.operators.combination.ReduceCombination;
 import org.gradoop.flink.util.GradoopFlinkConfig;
+
+import javax.xml.crypto.Data;
 
 /**
  * A graph data source for CSV files.
@@ -61,6 +64,25 @@ public class CSVDataSource extends CSVBase implements DataSource {
   @Override
   public LogicalGraph getLogicalGraph() {
     return getGraphCollection().reduce(new ReduceCombination());
+  }
+
+  /**
+   * Allows to read a graph head when importing a logical graph by passing the graph heads label.
+   * @param graphHeadLabel the graph head from graphs.csv
+   * @return logical graph with the selected graph head
+   */
+  public LogicalGraph getLogicalGraph(String graphHeadLabel) {
+    GraphCollection graphCollection = getGraphCollection();
+
+    DataSet<GraphHead> graphHeads = graphCollection.getGraphHeads();
+    DataSet<GraphHead> selected = graphHeads.filter(g -> g.getLabel().equals(graphHeadLabel));
+
+    DataSet<Vertex> vertices = graphCollection.getVertices();
+    DataSet<Edge> edges = graphCollection.getEdges();
+
+    LogicalGraphFactory factory = graphCollection.getConfig().getLogicalGraphFactory();
+
+    return factory.fromDataSets(selected, vertices, edges);
   }
 
   /**

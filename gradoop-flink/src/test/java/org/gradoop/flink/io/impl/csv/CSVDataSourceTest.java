@@ -19,13 +19,14 @@ import org.gradoop.flink.io.api.DataSource;
 import org.gradoop.flink.io.impl.edgelist.VertexLabeledEdgeListDataSourceTest;
 import org.gradoop.flink.model.api.epgm.GraphCollection;
 import org.gradoop.flink.model.api.epgm.LogicalGraph;
+import org.gradoop.flink.util.FlinkAsciiGraphLoader;
 import org.junit.Test;
 
 public class CSVDataSourceTest extends CSVTestBase {
 
   @Test
   public void testRead() throws Exception {
-    String csvPath = VertexLabeledEdgeListDataSourceTest.class
+    String csvPath = CSVDataSourceTest.class
       .getResource("/data/csv/input_graph_collection")
       .getFile();
 
@@ -51,7 +52,7 @@ public class CSVDataSourceTest extends CSVTestBase {
   public void testReadExtendedProperties() throws Exception {
     LogicalGraph expected = getExtendedLogicalGraph();
 
-    String csvPath = VertexLabeledEdgeListDataSourceTest.class
+    String csvPath = CSVDataSourceTest.class
       .getResource("/data/csv/input_extended_properties")
       .getFile();
 
@@ -64,5 +65,29 @@ public class CSVDataSourceTest extends CSVTestBase {
       .forEach(this::checkProperties);
     dataSource.getLogicalGraph().getVertices().collect()
       .forEach(this::checkProperties);
+  }
+
+  /**
+   * Reads a logical graph from a csv graph collection and selects a specified graph head.
+   */
+  @Test
+  public void testReadLogicalGraphWithSelectedGraphHead() {
+    String csvPath = CSVDataSourceTest.class
+      .getResource("/data/csv/input_graph_collection")
+      .getFile();
+
+    CSVDataSource dataSource = new CSVDataSource(csvPath, getConfig());
+    LogicalGraph input = dataSource.getLogicalGraph("g1");
+
+    FlinkAsciiGraphLoader loader = getLoaderFromString(
+      "g0:g1 {a:\"graph1\",b:2.75d}[" +
+        "(v_B_0:B {a:1234L,b:true,c:0.123d})" +
+        "(v_B_1:B {a:5678L,b:false,c:4.123d})" +
+        "(v_B_0)-[e_b_1:b{a:2718L}]->(v_B_1)]");
+
+    LogicalGraph expected = loader.getLogicalGraphByVariable("g1");
+
+    // equals by data is used to compare the graph heads.
+    expected.equalsByData(input);
   }
 }
